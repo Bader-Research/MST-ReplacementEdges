@@ -13,12 +13,10 @@
 #include<math.h>
 #include "disjointsets-GabowTarjan.h"
 
-#define DEBUG_MST 0
 #define DEBUG_EDGELIST 0
 #define DEBUG_ADDEDGE 0
 #define DEBUG_GRAPHAL 0
 #define DEBUG_BRIDGES 0
-#define DEBUG_DFS 0
 #define DEBUG_ROOT 0
 #define DEBUG_PATHLABEL 0
 #define DEBUG_REPLACE 0
@@ -51,7 +49,7 @@ long timer_end(struct timespec start_time){
 
 /***********************************************************************/
 /* MST code */
-/*  https://www.programmingalgorithms.com/algorithm/kruskal's-algorithm?lang=C */
+/***********************************************************************/
 
 typedef struct {
   int v1;
@@ -70,7 +68,6 @@ void checkPtr(void *ptr) {
   if (ptr == NULL) exit(1);
   return;
 }
-
 
 void freeGraph(Graph_t *graph) {
   free(graph->Edgelist);
@@ -211,10 +208,6 @@ void Kruskal(Graph_t *graph) {
     }
     i++;
   }
-
-
- // PrintMST(result, e);
-
 
   free(subsets);
   free(result);
@@ -418,37 +411,6 @@ int countBridges(Graph_t *graph) {
 /******************************************************/
 static int eulerCount;
 
-/*void DFS(GraphAL_t *graph, int v, int *visited, int *PARENT, int *IN, int *OUT )
-{
-    struct node *p;
-    int child;
-
-    eulerCount++;
-    IN[v] = eulerCount;
-
-    p=graph->adjLists[v];
-
-    visited[v]=1;
-    while(p!=NULL)
-    {
-       child=p->vertex;
-       
-       if(!visited[child]){
-	 PARENT[child] = v;
-#if DEBUG_DFS
-	 printf("DFS P[%6d]: %6d\n",child,v);
-#endif
- 	 DFS(graph, child, visited, PARENT, IN, OUT);
-       }
-       p=p->next;
-    }
-
-#if DEBUG_DFS
-    printf("DFS: OUT[%6d]: %6d\n",v,eulerCount);
-#endif
-    return;
-}
-*/
 
 /******************************************************/
 /* Replacement edge PathLabel */
@@ -1010,19 +972,31 @@ void main(int argc, char **argv) {
   int *visited, *PARENT, *IN, *OUT, *L;
   int *NEXT;
   Replacement_t *REPLACEMENT;
-  register int i, r;
+  register int i, j, k, r;
   /*int leaves;*/
   int bridges, maxReplace;
   int cc;
   int replacementFound;
   int *d;
   int b; 
-  int microSetNum=0;
-  int counter=0;
+  int  *MicrosetOfroot;
+  int microSetNum;
+  int numMicro;
+  int counter;
   Table *NODE;
+  int *amtNodes;
+  int *number;
+  int *micro;
+  int *parent;
+  char answer[4096][32][5] = {0};
+  int c;
+  int checker;
+  int powerchecker;
+  int move;
+  int z;
 
-  MicroSetType * microsub;
-  MacroSetType * macrosub;
+  MicroSetType *microsub;
+  MacroSetType *macrosub;
 
   int *markTableCounter;
   Graph_t *graph;
@@ -1063,7 +1037,6 @@ void main(int argc, char **argv) {
     }
   }
  
-
   /* Allocate arrays */
   
   visited = (int *)malloc(n * sizeof(int));
@@ -1076,11 +1049,17 @@ void main(int argc, char **argv) {
   checkPtr(IN);
   
   sub = (Subset_t *)malloc(n * sizeof(Subset_t));
+  checkPtr(sub);
   
-int  *MicrosetOfroot;
+  MicrosetOfroot = (int *)malloc(n * sizeof(int));
+  checkPtr(MicrosetOfroot);
+  
+  microsub = (MicroSetType *)malloc((n+1) * sizeof(MicroSetType));
+  checkPtr(microsub);
 
-MicrosetOfroot = (int *)malloc(n * sizeof(int));
-checkPtr(MicrosetOfroot);
+  d = (int *)malloc(n * sizeof(int));
+  checkPtr(d);
+
   OUT = (int *)malloc(n * sizeof(int));
   checkPtr(OUT);
 
@@ -1093,6 +1072,12 @@ checkPtr(MicrosetOfroot);
   REPLACEMENT = (Replacement_t *)malloc(n * sizeof(Replacement_t));
   checkPtr(REPLACEMENT);
 
+  number = (int *)malloc((n+1) * sizeof(int));
+  checkPtr(number);
+
+  micro = (int *)malloc((n+1) * sizeof(int));
+  checkPtr(micro);
+
 #if TIMING
   int REPEAT = (1<<23) / n;
   if (REPEAT < 10) REPEAT = 10;
@@ -1102,224 +1087,125 @@ checkPtr(MicrosetOfroot);
   for (r=0; r<1 ; r++){
 #endif
 
-  /* pick random vertex as root */
-  srand(time(0));
-  root = rand() % n;
- // root=7;
+    /* pick random vertex as root */
+    srand(time(0));
+    root = rand() % n;
 #if DEBUG_ROOT
-  printf("\n");
-  printf("Root vertex: %6d\n",root);
+    printf("\n");
+    printf("Root vertex: %6d\n",root);
 #endif
 
-  /* root tree */
-  /* perform DFS at root, setting Parent(v), IN(v), OUT(v) */
+    /* root tree */
+    /* perform DFS at root, setting Parent(v), IN(v), OUT(v) */
 
-  for (i=0 ; i<n ; i++)
-    visited[i] = 0;
-
-  PARENT[root] = root;
-  eulerCount = 0;
-  //DFS(minSpanTree, root, visited, PARENT, IN, OUT);
-  
-   d = (int *)malloc(n * sizeof(int));
-  checkPtr(d);
-  for (i=0 ; i<n ; i++)
-    d[i] = 1;
-  b=B;
-   int numMicro = 2*n/(b-1) +1;  
-  
-  NODE = (Table *)malloc((numMicro+1) * sizeof(Table));
-  microsub = (MicroSetType *)malloc((n+1) * sizeof(MicroSetType));
-  checkPtr(microsub);
-
-
-	int amtNodes[(numMicro+1)];
-  markTableCounter = (int *)malloc((numMicro+1) * sizeof(int));
-  checkPtr(markTableCounter);
-  checkPtr(d);
-  microSetNum=1;
-  counter=1;
-  
-
-	
-	int number[n+1];
-	int micro[n+1];
     for (i=0 ; i<n ; i++)
-    {
-    	visited[i] = 0;
-    	micro[i] = -1;
-    	number[i]=0;
-    MicrosetOfroot[i] = -1;
-    	
-    }
-    int *parent;
-    parent=(int *)malloc((numMicro+1) * sizeof(int));
-        for (i=1 ; i<numMicro+1 ; i++)
-    {
-      
-      
-        parent[i]=0;
-        amtNodes[i] =0;
-      
-			markTableCounter[i]=0;
-    	
-    }
-/*    for(int i =1; i<numMicro+1;i++)
-{
-  fprintf(outfile,"parentb[%6d]: %6d\n", i, parent[i]);
-}
-*/
-checkPtr(parent);
+      visited[i] = 0;
 
-
-dfs_microset(minSpanTree, root,visited, 1,d, b, microsub, & microSetNum, &counter, micro, number,  PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT);
-  macrosub = (MacroSetType *)malloc((microSetNum+1) * sizeof(MacroSetType));
-  checkPtr(macrosub);
-
-int j=0; 
-PARENT[root] = root;
-
-
-
-
-
-
-
-makeMacroSet(microsub,macrosub,(microSetNum+1),micro,root );
-
-
-
-
+    PARENT[root] = root;
+    eulerCount = 0;
      
-
-
-    
-
-
-const int parameter = numMicro+1;
-const int numMarkTables = (int)pow(2,parameter);
-const int numParentTables = (int)pow(2,(int)((parameter-1)*(int)ceil(log2(b))));
-
-char answer[4096][32][5] = {0};
-
-
-
-
-int c=0;
-
-int checker;
-int powerchecker;
-//initialize answer table
-int move = (int)ceil(log2(b));
-
-
-
-int z=1;
-
-for (i=1;i<microSetNum+1;i++){
-	for(int j=0; j<32;j++)
-
-	{
-		
-		
-		for(int k=1; k<b;k++)
-		{
-
-			c = j >>(k-1) & 1;
-
-			if(c==0)
-				answer[parent[i]][j][k] = k;
-			else
-			{
-			     z=k;
-				c=1;
-				while(z!=0 && c!=0)
-				{
-					
-				   	z = bitExtract(parent[i],3,(z)*3-2);
-				   	if(z!=0)
-				   			c = j >>(z-1) & 1;
-				   	else
-				   	break;
-				}
-				if(z==0){
-          
-            		
-					answer[parent[i]][j][k] = 0;
-        }
-				if(c==0 && z!=0)
-				{
-					answer[parent[i]][j][k] = z;
-				}
-
-			}
-		//fprintf(outfile, "answer[[%6d]][%6d][%6d] = %6d \n", parent[i],j,k,answer[parent[i]][j][k] );	
-		}
-		
-	}
-	
-
-    } 
-    
-
-    /*for(i =1;i<microSetNum+1;i++)
-    {
-      fprintf(outfile, "parent[%6d]: %6d\n", i,parent[i]);
-    }
-        for(i =0;i<n;i++)
-    {
-      fprintf(outfile, "PARENT[%6d]: %6d\n", i,PARENT[i]);
-    }*/
-/*      for (i=0 ; i<n ; i++) {
-    fprintf(outfile, "PARENT[%6d]: %6d\n", i, PARENT[i]);
-    /* Lazy: no need to init v2 to NULL */
-    /*    REPLACEMENT[i].v2 = NULLVERTEX; */
-//  }
- /*         for (i=1 ; i<microSetNum+1 ; i++) {
-    fprintf(outfile, "microsub[%6d]. root: %6d\n", i, microsub[i].root);
-    /* Lazy: no need to init v2 to NULL */
-    /*    REPLACEMENT[i].v2 = NULLVERTEX; */
- // }
- /*       for (i=0 ; i<n ; i++) {
-    fprintf(outfile, "root[%6d]: %6d\n", i, MicrosetOfroot[i]);
-    /* Lazy: no need to init v2 to NULL */
-    /*    REPLACEMENT[i].v2 = NULLVERTEX; */
- // } 
+    for (i=0 ; i<n ; i++)
+      d[i] = 1;
+   
+    b = B;
+    numMicro = 2*n/(b-1) + 1;  
   
-  //fprintf(outfile, "answer[2][4][2] = %6d \n",answer[2,4,2] );
+    NODE = (Table *)malloc((numMicro+1) * sizeof(Table));
+    checkPtr(NODE);
+   
+    amtNodes = (int *)malloc((numMicro+1)* sizeof(int));
+    checkPtr(amtNodes);
+  
+    markTableCounter = (int *)malloc((numMicro+1) * sizeof(int));
+    checkPtr(markTableCounter);
+
+    parent = (int *)malloc((numMicro+1) * sizeof(int));
+    checkPtr(parent);
+
+    microSetNum = 1;
+    counter = 1;
+  
+    macrosub = (MacroSetType *)malloc((microSetNum+1) * sizeof(MacroSetType));
+    checkPtr(macrosub);
+
+    for (i=0 ; i<n ; i++) {
+      visited[i] = 0;
+      micro[i] = -1;
+      number[i]=0;
+      MicrosetOfroot[i] = -1;
+    }
+
+    for (i=1 ; i<numMicro+1 ; i++) {
+      parent[i] = 0;
+      amtNodes[i] = 0;
+      markTableCounter[i] = 0;
+    }
+
+    dfs_microset(minSpanTree, root,visited, 1,d, b, microsub, & microSetNum, &counter, micro, number,  PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT);
+
+    j=0; 
+    PARENT[root] = root;
+
+    makeMacroSet(microsub, macrosub, (microSetNum+1), micro, root);
+
+    const int parameter = numMicro+1;
+    const int numMarkTables = (int)pow(2,parameter);
+    const int numParentTables = (int)pow(2,(int)((parameter-1)*(int)ceil(log2(b))));
+
+    /* initialize answer table */
+    move = (int)ceil(log2(b));
+    z = 1;
+
+    for (i=1 ; i<microSetNum+1 ; i++) {
+      for(j=0; j<32 ; j++) {
+	for(k=1 ; k<b ; k++) {
+	  c = j >>(k-1) & 1;
+	  if(c==0)
+	    answer[parent[i]][j][k] = k;
+	  else {
+	    z=k;
+	    c=1;
+	    while (z!=0 && c!=0) {
+	      z = bitExtract(parent[i],3,(z)*3-2);
+	      if (z!=0)
+		c = j >>(z-1) & 1;
+	      else
+		break;
+	    }
+	    if (z==0)
+	      answer[parent[i]][j][k] = 0;
+	    if(c==0 && z!=0)
+	      answer[parent[i]][j][k] = z;
+	  }
+	}
+      }
+    }
+
 
   /**********************************************************/
   /* Replacement Edges */
   /**********************************************************/
 
-  /* Create PathLabel next pointers for each vertex, initially set to parent */
-//	makeSet(n,sub);
-
   /* Create solution REPLACEMENT[], where REPLACEMENT[i] is the replacement edge for MST edge REPLACEMENT[i], REPLACEMENT[PARENT[i]] */
-  for (i=0 ; i<n ; i++) {
-    REPLACEMENT[i].v1 = NULLVERTEX;
-    /* Lazy: no need to init v2 to NULL */
-    /*    REPLACEMENT[i].v2 = NULLVERTEX; */
-  }
+    for (i=0 ; i<n ; i++) {
+      REPLACEMENT[i].v1 = NULLVERTEX;
+      /* Lazy: no need to init v2 to NULL */
+      /* REPLACEMENT[i].v2 = NULLVERTEX; */
+    }
   
   /* Scan through m-n+1 non-tree edges, and run PathLabel for each */
-  maxReplace = (n-1) - bridges; 
-  replacementFound = 0;
+    maxReplace = (n-1) - bridges; 
+    replacementFound = 0;
 
- 
-for (i=0 ; (i<m) && (replacementFound < maxReplace) ; i++) {
-    if (edges[i].T == 0) {
+    for (i=0 ; (i<m) && (replacementFound < maxReplace) ; i++) {
+      if (edges[i].T == 0) {
 #if DEBUG_PATHLABEL
-      printf("PathLabel for edge <%6d, %6d>\n", edges[i].v1, edges[i].v2);
+	printf("PathLabel for edge <%6d, %6d>\n", edges[i].v1, edges[i].v2);
 #endif
-  // fprintf(outfile, "edges[%6d].v1 = %6d; edges[%6d].v2 = %6d\n",i,edges[i].v1,i,edges[i].v2);
-      replacementFound += PathLabel(edges[i].v1, edges[i].v2, PARENT,  IN, OUT,  REPLACEMENT, sub,   micro, number, microsub,  answer, macrosub, markTableCounter, amtNodes, MicrosetOfroot, microSetNum, parent, root);
-              // fprintf(outfile, "edges[%6d].v2 = %6d; edges[%6d].v1 = %6d\n",i,edges[i].v2,i,edges[i].v1);
-    
-      replacementFound += PathLabel(edges[i].v2, edges[i].v1, PARENT,  IN, OUT,  REPLACEMENT, sub,   micro, number, microsub,   answer, macrosub, markTableCounter,  amtNodes, MicrosetOfroot, microSetNum, parent,root);
-   
+	replacementFound += PathLabel(edges[i].v1, edges[i].v2, PARENT,  IN, OUT,  REPLACEMENT, sub,   micro, number, microsub,  answer, macrosub, markTableCounter, amtNodes, MicrosetOfroot, microSetNum, parent, root);
+	replacementFound += PathLabel(edges[i].v2, edges[i].v1, PARENT,  IN, OUT,  REPLACEMENT, sub,   micro, number, microsub,   answer, macrosub, markTableCounter,  amtNodes, MicrosetOfroot, microSetNum, parent,root);
+      }
     }
-  }
 
  
 #if TIMING
@@ -1339,22 +1225,24 @@ for (i=0 ; (i<m) && (replacementFound < maxReplace) ; i++) {
  } 
  fclose(outfile);
   
-  /*free(graph);
-  freeGraphAL(minSpanTree);
-  free(REPLACEMENT); 
-  free(OUT);
-  free(IN);
-  free(PARENT);
-  free(visited);
-  free(sub);
-  free(NODE);
-  //free(parent);
-  free(macrosub);
-  free(microsub);
-  //free(MicrosetOfroot);
-  //free(answer);
-  //free(markTableCounter);
-  //free(amtNodes);*/
-  return;
+ free(graph);
+ freeGraphAL(minSpanTree);
+ free(REPLACEMENT); 
+ free(OUT);
+ free(IN);
+ free(PARENT);
+ free(visited);
+ free(sub);
+ free(NODE);
+ free(parent);
+ free(macrosub);
+ free(microsub);
+ free(MicrosetOfroot);
+ free(markTableCounter);
+ free(amtNodes);
+ free(micro);
+ free(number);
+ free(parent);
+ return;
 }
 

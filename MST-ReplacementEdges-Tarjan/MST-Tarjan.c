@@ -12,7 +12,6 @@
 #include<ctype.h>
 #include "disjointsets-Tarjan.h"
 
-#define DEBUG_MST 0
 #define DEBUG_EDGELIST 0
 #define DEBUG_ADDEDGE 0
 #define DEBUG_GRAPHAL 0
@@ -20,7 +19,6 @@
 #define DEBUG_DFS 0
 #define DEBUG_ROOT 0
 #define DEBUG_PATHLABEL 0
-#define DEBUG_REPLACE 0
 
 #define TIMING 0
 
@@ -49,7 +47,7 @@ long timer_end(struct timespec start_time){
 
 /***********************************************************************/
 /* MST code */
-/*  https://www.programmingalgorithms.com/algorithm/kruskal's-algorithm?lang=C */
+/***********************************************************************/
 
 typedef struct {
   int v1;
@@ -90,13 +88,6 @@ Graph_t *CreateGraph(int n, int m) {
 
 int CompareEdges(const void* a, const void* b) {
   return ((Edge_t *)a)->w - ((Edge_t *)b)->w;
-}
-
-void PrintMST(Edge_t *result, int e) {
-  int i;
-  for (i = 0; i < e; i++)
-    printf("MST: %6d -- %6d == %6d\n", result[i].v1, result[i].v2, result[i].w);
-  return;
 }
 
 int getRoot(int *arr, int i) {
@@ -208,10 +199,6 @@ void Kruskal(Graph_t *graph) {
     }
     i++;
   }
-
-#if DEBUG
-  PrintMST(result, e);
-#endif
 
   free(subsets);
   free(result);
@@ -835,7 +822,7 @@ int main(int argc, char **argv) {
   for (i=0 ; i<n ; i++) {
     REPLACEMENT[i].v1 = NULLVERTEX;
     /* Lazy: no need to init v2 to NULL */
-    /*    REPLACEMENT[i].v2 = NULLVERTEX; */
+    /* REPLACEMENT[i].v2 = NULLVERTEX; */
   }
   
   /* Scan through m-n+1 non-tree edges, and run PathLabel for each */
