@@ -1,6 +1,7 @@
 #ifndef _DISJOINT_GABOW_TARJAN
 #define _DISJOINT_GABOW_TARJAN
 
+/* Set the size of a microset */
 #define B  5
 
 typedef struct {

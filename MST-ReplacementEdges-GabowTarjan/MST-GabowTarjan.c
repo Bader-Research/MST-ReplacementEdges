@@ -686,7 +686,7 @@ void parseFlags(int argc, char **argv, FILE **infile) {
   return;
 }
 
-void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int b, MicroSetType *microsub, int * microSetNum, int *counter, int micro[], int number[],  int *PARENT,  int *amtNodes, int *MicrosetOfroot, Table *NODE, int *parent, int *IN, int *OUT)
+void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int b, MicroSetType *microsub, int * microSetNum, int *counter, int micro[], int number[],  int *PARENT,  int *amtNodes, int *MicrosetOfroot, Table *NODE, int *parent, int *IN, int *OUT, int *top)
 {
     struct node *p;
     int child;
@@ -709,13 +709,13 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
        if(!visited[child]){
          PARENT[child] = v;
          //fprintf(outfile, "PARENT[%6d]: %6d\n", child,PARENT[child]);
-       	   dfs_microset(graph, child, visited,-1,d,b,microsub, microSetNum, counter, micro, number,   PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT);
+	 dfs_microset(graph, child, visited,-1,d,b,microsub, microSetNum, counter, micro, number,   PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, top);
        	   if (d[v]<((b+1)/2)) {
 #if DEBUG_MICROSET
      printf("Before Updata  d[%d]=%d + d[%d]=%d=%d\n",v,d[v],child,d[child],d[v]+d[child]);
 #endif
              d[v]=d[v]+d[child];
-             push(child);
+             push(child, top);
 
              *counter=*counter+1;
 #if DEBUG_MICROSET
@@ -742,7 +742,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
               i=1;
              for (i=1;i<popnum+1;i++){
 
-                microsub[*microSetNum].vertices[i]=pop();
+                microsub[*microSetNum].vertices[i]=pop(top);
                  NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
 
                 micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
@@ -788,7 +788,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
              *counter=*counter-popnum;
              d[v]=2;
              d[child]=1;
-             push(child);
+             push(child, top);
 
              *counter=*counter+1;
 #if DEBUG_MICROSET
@@ -803,17 +803,6 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
     OUT[v] = eulerCount;
 
        	   if (d[v]>=((b+1)/2)) {
-/*
-#if DEBUG_MICROSET
-     printf("3 Before Updata  d[%d]=%d + d[%d]=%d=%d\n",v,d[v],child,d[child],d[v]+d[child]);
-#endif
-             push(v);
-#if DEBUG_MICROSET
-     printf("3 Push current node %d, into stack as the %d th element, d[%d]=%d\n",v,*counter-1,v,d[v]);
-#endif
-           } else
-           {
-*/
 #if DEBUG_MICROSET
     printf("4- Complete a microset %d, with root  %d and the subtree  has %d elements, d[%d]=%d\n",*microSetNum,v,d[v]-1,v,d[v]);
 #endif
@@ -833,7 +822,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
             i=1;
              for (i=1;i<popnum+1;i++){
 
-                microsub[*microSetNum].vertices[i]=pop();
+                microsub[*microSetNum].vertices[i]=pop(top);
                 
                
                 NODE[*microSetNum].nodetable[i] =  microsub[*microSetNum].vertices[i];
@@ -886,7 +875,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
 #endif
              popnum=d[v]-1;
              for (i=0;i<popnum;i++){
-                microsub[*microSetNum].vertices[i]=pop();
+                microsub[*microSetNum].vertices[i]=pop(&top);
              }
              microsub[*microSetNum].root=v;
              *microSetNum=*microSetNum+1;
@@ -909,7 +898,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
              for (i=1;i<popnum+1;i++){
              	
                 	
-                microsub[*microSetNum].vertices[i]=pop();
+                microsub[*microSetNum].vertices[i]=pop(top);
                 NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
 
                 micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
@@ -995,6 +984,7 @@ void main(int argc, char **argv) {
   int powerchecker;
   int move;
   int z;
+  int top;
 
   MicroSetType *microsub;
   MacroSetType *macrosub;
@@ -1129,6 +1119,11 @@ void main(int argc, char **argv) {
     macrosub = (MacroSetType *)malloc((microSetNum+1) * sizeof(MacroSetType));
     checkPtr(macrosub);
 
+    if (!stack_init(n, &top)) {
+      fprintf(stderr,"Couldn't allocate stack of size %n\n",n);
+      exit(-1);
+    }
+
     for (i=0 ; i<n ; i++) {
       visited[i] = 0;
       micro[i] = -1;
@@ -1142,7 +1137,7 @@ void main(int argc, char **argv) {
       markTableCounter[i] = 0;
     }
 
-    dfs_microset(minSpanTree, root,visited, 1,d, b, microsub, & microSetNum, &counter, micro, number,  PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT);
+    dfs_microset(minSpanTree, root,visited, 1,d, b, microsub, & microSetNum, &counter, micro, number,  PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, &top);
 
     j=0; 
     PARENT[root] = root;
@@ -1225,7 +1220,8 @@ void main(int argc, char **argv) {
    }
  } 
  fclose(outfile);
-  
+
+ stack_free();
  free(graph);
  freeGraphAL(minSpanTree);
  free(REPLACEMENT); 

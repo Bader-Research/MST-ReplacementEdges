@@ -1,6 +1,6 @@
 CC = gcc
 PROG = mst
-FILES := MST-GabowTarjan.c disjointsets-GabowTarjan.c
+FILES := MST-GabowTarjan.c disjointsets-GabowTarjan.c stack.c
 GRAPHS = $(wildcard inputs/*.gr)
 OUTFILES = $(patsubst inputs/%.gr, %.out, $(GRAPHS))
 
