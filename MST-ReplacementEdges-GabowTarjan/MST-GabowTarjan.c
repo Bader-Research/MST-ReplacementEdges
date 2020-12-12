@@ -12,6 +12,7 @@
 #include<ctype.h>
 #include<math.h>
 #include "disjointsets-GabowTarjan.h"
+#include "stack.h"
 
 #define DEBUG_EDGELIST 0
 #define DEBUG_ADDEDGE 0

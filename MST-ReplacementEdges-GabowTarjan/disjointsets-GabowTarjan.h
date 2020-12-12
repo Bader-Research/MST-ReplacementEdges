@@ -30,13 +30,6 @@ typedef struct {
   Table *mark;
 } MultiDimTable;
 
-int bitExtract(int, int, int);
-int isempty();
-int isfull();
-int peek();
-int pop();
-void push(int);
-
 int Find(Subset_t *, int);
 void Union(Subset_t *, int, int);
 void MicroLink(int*, int*, int, int *, int *);
