@@ -33,9 +33,15 @@ void Union(Subset_t *subsets, int x, int y) {
 
 
 void MicroLink(int micro[], int number[], int v, int *markTableCounter, int * amtNodes) {
-  int x, y, z;
+  int z;
+#if 0
+  int x, y;
+#endif
+  
+#if 0
   x = amtNodes[micro[v]];
   y = x-number[v];
+#endif
   z = number[v];
   {
     markTableCounter[micro[v]] += (int) (pow(2,(z-1)) +0.5);
@@ -60,16 +66,17 @@ int microfind(int v, int micro[], int number[], MicroSetType *microsub, char ans
 }
 
 int macrofind(int x, MacroSetType *macrosub, int micro[], int MicrosetOfroot[],MicroSetType *microsub, int PARENT[], int root, int number[], int *markTableCounter, int amtNodes[], char answer[][32][5], int *parent ) {
-  int y;
   if (microfind(x, micro, number, microsub,  answer,markTableCounter,parent,PARENT )!=x) {
     if (micro[PARENT[x]]!=micro[x] || PARENT[x]!=microsub[micro[x]].root)
       return PARENT[x];
   }
 
+  /* DAB COMMENT: Not needed? */
+#if 0
   if(macrosub[MicrosetOfroot[x]].parent == macrosub[MicrosetOfroot[x]].root) {
     return macrosub[MicrosetOfroot[x]].parent;
   }
-  
+#endif  
   if(macrosub[MicrosetOfroot[x]].parent != macrosub[MicrosetOfroot[x]].root) {
     macrosub[MicrosetOfroot[x]].parent=macrofind(macrosub[MicrosetOfroot[x]].parent,macrosub,micro, MicrosetOfroot,microsub, PARENT,root,number, markTableCounter, amtNodes,answer, parent  );
   }

@@ -24,6 +24,10 @@
 #define DEBUG_MICROSET 0
 #define TIMING 0
 
+/* Memory fudge */
+#define FIXME 1000
+#define DEBUG 1
+
 #define amtMarkTables
 char *INFILENAME;
 FILE *outfile;
@@ -429,7 +433,6 @@ typedef struct {
 #define PL_ANC   2
 
 int PathLabel(int s, int t, int *PARENT,  int *IN, int *OUT,  Replacement_t *REPLACEMENT, Subset_t *sub, int micro[], int number[], MicroSetType *microsub,  char answer[][32][5], MacroSetType *macrosub, int *markTableCounter,  int *amtNodes, int *MicrosetOfroot, int microSetNum, int parent[], int root) {
-  int i, j;
   int found;
   int k1, k2;
   int v;
@@ -474,8 +477,6 @@ int PathLabel(int s, int t, int *PARENT,  int *IN, int *OUT,  Replacement_t *REP
       k2 = IN[s];
     }
   }
-
-  i=0;
 
 #if DEBUG_PATHLABEL
   printf("PathLabel: k1:%6d k2:%6d\n",k1, k2);
@@ -556,7 +557,7 @@ Graph_t *ReadGraphFromFile(FILE *infile, int *numVertices, int *numEdges) {
 
   while (!feof(infile)){
     if (fgets(lineBuf, MAXLEN, infile) != NULL) {
-      sscanf(lineBuf,"%s %s %s",&sstr, &tstr, &wstr);
+      sscanf(lineBuf,"%s %s %s",(char *)&sstr, (char *)&tstr, (char *)&wstr);
       if (checkLine(lineBuf)) {
 	if (wstr[0] == 0) {
 	  if (!QUIET) {
@@ -586,7 +587,7 @@ Graph_t *ReadGraphFromFile(FILE *infile, int *numVertices, int *numEdges) {
   i = 0;
   while (i<m) {
     fgets(lineBuf, MAXLEN, infile);
-    sscanf(lineBuf,"%s %s %s",&sstr, &tstr, &wstr);
+    sscanf(lineBuf,"%s %s %s",(char *)&sstr, (char *)&tstr, (char *)&wstr);
     if (checkLine(lineBuf)) {
       s = atoi(sstr);
       t = atoi(tstr);
@@ -884,7 +885,6 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
      }
 */    
     if (isRoot>0) {
-    	int temp;
              popnum=*counter-1;
         
              NODE[*microSetNum].nodetable = (int *)malloc((popnum+2) * sizeof(int));
@@ -954,7 +954,12 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
 }
 /******************************************************/
 
-void main(int argc, char **argv) {
+inline int bitExtract(int num, int a, int b) {
+  return (((1 << a)-1) & (num >> (b-1)));
+}
+
+
+int main(int argc, char **argv) {
   Subset_t *sub;
   int n, m;
   FILE *infile;
@@ -962,7 +967,7 @@ void main(int argc, char **argv) {
   int *visited, *PARENT, *IN, *OUT, *L;
   int *NEXT;
   Replacement_t *REPLACEMENT;
-  register int i, j, k, r;
+  register int i, j, k;
   /*int leaves;*/
   int bridges, maxReplace;
   int cc;
@@ -985,9 +990,6 @@ void main(int argc, char **argv) {
   char answer[4096][32][5] = {0};
 
   int c;
-  int checker;
-  int powerchecker;
-  int move;
   int z;
   int top;
 
@@ -1120,12 +1122,9 @@ void main(int argc, char **argv) {
 
     microSetNum = 1;
     counter = 1;
-  
-    macrosub = (MacroSetType *)malloc((microSetNum+1) * sizeof(MacroSetType));
-    checkPtr(macrosub);
 
     if (!stack_init(n, &top)) {
-      fprintf(stderr,"Couldn't allocate stack of size %n\n",n);
+      fprintf(stderr,"Couldn't allocate stack of size %d\n",n);
       exit(-1);
     }
 
@@ -1144,17 +1143,29 @@ void main(int argc, char **argv) {
 
     dfs_microset(minSpanTree, root,visited, 1,d, b, microsub, & microSetNum, &counter, micro, number,  PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, &top);
 
+    /* FIXME */
+#if 0
+    macrosub = (MacroSetType *)malloc(FIXME*(microSetNum+1) * sizeof(MacroSetType));
+#else
+    macrosub = (MacroSetType *)malloc((microSetNum+1) * sizeof(MacroSetType));
+#if DEBUG
+    fprintf(stderr,"size of macrosub: %d\n",microSetNum+1);
+#endif
+#endif
+    checkPtr(macrosub);
+
     j=0; 
     PARENT[root] = root;
 
     makeMacroSet(microsub, macrosub, (microSetNum+1), micro, root);
 
+#if 0
     const int parameter = numMicro+1;
     const int numMarkTables = (int)pow(2,parameter);
     const int numParentTables = (int)pow(2,(int)((parameter-1)*(int)ceil(log2(b))));
+#endif
 
     /* initialize answer table */
-    move = (int)ceil(log2(b));
     z = 1;
 
     for (i=1 ; i<microSetNum+1 ; i++) {
@@ -1245,6 +1256,6 @@ void main(int argc, char **argv) {
  free(micro);
  free(number);
  free(parent);
- return;
+ return 0;
 }
 

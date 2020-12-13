@@ -1,10 +1,14 @@
 #ifndef _DISJOINT_GABOW_TARJAN
 #define _DISJOINT_GABOW_TARJAN
 
+/* 4092 is 2^(ceil(log2 B)*(B-1)) */
+/* 32 is 2^B */
+
 /* Set the size of a microset */
-/* B-1(ceil(log B)) has to be less than a or the word length */
+/* (B-1)* ceil(log2 B) has to be less than the word length */
 /* and B >= 2 */
 #define B  5
+
 
 typedef struct {
   int Parent;

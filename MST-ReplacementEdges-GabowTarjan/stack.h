@@ -3,28 +3,28 @@
 
 #include<stdio.h>
 
-int MAXSTACKSIZE;
-int *stack;
+#define INLINE inline
+
+extern int MAXSTACKSIZE;
+extern int *stack;
+
+
 int stack_init(int, int*);
 void stack_free();
 
-inline int bitExtract(int num, int a, int b) {
-  return (((1 << a)-1) & (num >> (b-1)));
-}
-
-inline int isempty(int top) {
+INLINE int isempty(int top) {
   return(top == -1);
 }
    
-inline int isfull(int top) {
+INLINE int isfull(int top) {
   return(top == MAXSTACKSIZE - 1);
 }
 
-inline int peek(int top) {
+INLINE int peek(int top) {
   return stack[top];
 }
 
-inline int pop(int *top) {
+INLINE int pop(int *top) {
   int data;
 	
   if (!isempty(*top)) {
@@ -36,7 +36,7 @@ inline int pop(int *top) {
   return(data);
 }
 
-inline void push(int data, int *top) {
+INLINE void push(int data, int *top) {
   if (!isfull(*top)) {
     *top = *top + 1;   
     stack[*top] = data;
