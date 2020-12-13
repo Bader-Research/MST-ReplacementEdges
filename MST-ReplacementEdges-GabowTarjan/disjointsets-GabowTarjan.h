@@ -2,6 +2,8 @@
 #define _DISJOINT_GABOW_TARJAN
 
 /* Set the size of a microset */
+/* B-1(ceil(log B)) has to be less than a or the word length */
+/* and B >= 2 */
 #define B  5
 
 typedef struct {

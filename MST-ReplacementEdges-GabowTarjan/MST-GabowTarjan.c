@@ -978,7 +978,12 @@ void main(int argc, char **argv) {
   int *number;
   int *micro;
   int *parent;
+
+  /* 4096 is 2^(ceil(log2 B)*(B-1)) */
+  /* 32 is 2^B */
+  /* 5 is B */
   char answer[4096][32][5] = {0};
+
   int c;
   int checker;
   int powerchecker;
