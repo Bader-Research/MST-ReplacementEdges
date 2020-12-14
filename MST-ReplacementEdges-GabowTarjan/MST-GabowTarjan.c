@@ -12,7 +12,6 @@
 #include<ctype.h>
 #include<math.h>
 #include "disjointsets-GabowTarjan.h"
-#include "stack.h"
 
 #define DEBUG_EDGELIST 0
 #define DEBUG_ADDEDGE 0
@@ -23,10 +22,6 @@
 #define DEBUG_REPLACE 0
 #define DEBUG_MICROSET 0
 #define TIMING 0
-
-/* Memory fudge */
-#define FIXME 1000
-#define DEBUG 1
 
 #define amtMarkTables
 char *INFILENAME;
@@ -51,6 +46,69 @@ long timer_end(struct timespec start_time){
 #endif
 /***********************************************************************/
 
+void checkPtr(void *ptr) {
+  if (ptr == NULL) exit(1);
+  return;
+}
+
+/***********************************************************************/
+/* Stack */
+
+struct Stack {
+  int top;
+  int capacity;
+  int* array;
+};
+ 
+struct Stack* createStack(int capacity) {
+  struct Stack* stack = (struct Stack*)malloc(sizeof(struct Stack));
+  checkPtr(stack);
+  stack->capacity = capacity;
+  stack->top = -1;
+  stack->array = (int*)malloc(stack->capacity * sizeof(int));
+  checkPtr(stack->array);
+  return stack;
+}
+ 
+void destroyStack(struct Stack* stack) {
+  free(stack->array);
+  free(stack);
+  return;
+}
+ 
+int isFull(struct Stack* stack) {
+  return stack->top == stack->capacity - 1;
+}
+ 
+int isEmpty(struct Stack* stack) {
+  return stack->top == -1;
+}
+ 
+void push(struct Stack* stack, int item) {
+  if (isFull(stack)) {
+    fprintf(stderr,"ERROR: Stack is full.\n");
+    return;
+  }
+  stack->array[++stack->top] = item;
+  return;
+}
+ 
+int pop(struct Stack* stack) {
+  if (isEmpty(stack)) {
+    fprintf(stderr,"ERROR: Stack is empty.\n");
+    return -1;
+  }
+  return stack->array[stack->top--];
+}
+ 
+int peek(struct Stack* stack) {
+  if (isEmpty(stack))
+    return -1;
+  return stack->array[stack->top];
+}
+ 
+/***********************************************************************/
+
 
 /***********************************************************************/
 /* MST code */
@@ -68,11 +126,6 @@ typedef struct {
   int m;
   Edge_t* Edgelist;
 } Graph_t;
-
-void checkPtr(void *ptr) {
-  if (ptr == NULL) exit(1);
-  return;
-}
 
 void freeGraph(Graph_t *graph) {
   free(graph->Edgelist);
@@ -687,7 +740,7 @@ void parseFlags(int argc, char **argv, FILE **infile) {
   return;
 }
 
-void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int b, MicroSetType *microsub, int * microSetNum, int *counter, int micro[], int number[],  int *PARENT,  int *amtNodes, int *MicrosetOfroot, Table *NODE, int *parent, int *IN, int *OUT, int *top)
+void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int b, MicroSetType *microsub, int * microSetNum, int *counter, int micro[], int number[],  int *PARENT,  int *amtNodes, int *MicrosetOfroot, Table *NODE, int *parent, int *IN, int *OUT, struct Stack* stack)
 {
     struct node *p;
     int child;
@@ -710,13 +763,13 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
        if(!visited[child]){
          PARENT[child] = v;
          //fprintf(outfile, "PARENT[%6d]: %6d\n", child,PARENT[child]);
-	 dfs_microset(graph, child, visited,-1,d,b,microsub, microSetNum, counter, micro, number,   PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, top);
+	 dfs_microset(graph, child, visited,-1,d,b,microsub, microSetNum, counter, micro, number,   PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, stack);
        	   if (d[v]<((b+1)/2)) {
 #if DEBUG_MICROSET
      printf("Before Updata  d[%d]=%d + d[%d]=%d=%d\n",v,d[v],child,d[child],d[v]+d[child]);
 #endif
              d[v]=d[v]+d[child];
-             push(child, top);
+	     push(stack, child);
 
              *counter=*counter+1;
 #if DEBUG_MICROSET
@@ -743,7 +796,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
               i=1;
              for (i=1;i<popnum+1;i++){
 
-                microsub[*microSetNum].vertices[i]=pop(top);
+	       microsub[*microSetNum].vertices[i]=pop(stack);
                  NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
 
                 micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
@@ -789,7 +842,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
              *counter=*counter-popnum;
              d[v]=2;
              d[child]=1;
-             push(child, top);
+	     push(stack, child);
 
              *counter=*counter+1;
 #if DEBUG_MICROSET
@@ -823,7 +876,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
             i=1;
              for (i=1;i<popnum+1;i++){
 
-                microsub[*microSetNum].vertices[i]=pop(top);
+	       microsub[*microSetNum].vertices[i]=pop(stack);
                 
                
                 NODE[*microSetNum].nodetable[i] =  microsub[*microSetNum].vertices[i];
@@ -898,7 +951,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
              for (i=1;i<popnum+1;i++){
              	
                 	
-                microsub[*microSetNum].vertices[i]=pop(top);
+	       microsub[*microSetNum].vertices[i]=pop(stack);
                 NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
 
                 micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
@@ -991,7 +1044,7 @@ int main(int argc, char **argv) {
 
   int c;
   int z;
-  int top;
+  struct Stack *stack;
 
   MicroSetType *microsub;
   MacroSetType *macrosub;
@@ -1123,10 +1176,7 @@ int main(int argc, char **argv) {
     microSetNum = 1;
     counter = 1;
 
-    if (!stack_init(n, &top)) {
-      fprintf(stderr,"Couldn't allocate stack of size %d\n",n);
-      exit(-1);
-    }
+    stack = createStack(n);
 
     for (i=0 ; i<n ; i++) {
       visited[i] = 0;
@@ -1141,17 +1191,9 @@ int main(int argc, char **argv) {
       markTableCounter[i] = 0;
     }
 
-    dfs_microset(minSpanTree, root,visited, 1,d, b, microsub, & microSetNum, &counter, micro, number,  PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, &top);
+    dfs_microset(minSpanTree, root,visited, 1,d, b, microsub, & microSetNum, &counter, micro, number,  PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, stack);
 
-    /* FIXME */
-#if 0
-    macrosub = (MacroSetType *)malloc(FIXME*(microSetNum+1) * sizeof(MacroSetType));
-#else
     macrosub = (MacroSetType *)malloc((microSetNum+1) * sizeof(MacroSetType));
-#if DEBUG
-    fprintf(stderr,"size of macrosub: %d\n",microSetNum+1);
-#endif
-#endif
     checkPtr(macrosub);
 
     j=0; 
@@ -1237,7 +1279,7 @@ int main(int argc, char **argv) {
  } 
  fclose(outfile);
 
- stack_free();
+ destroyStack(stack);
  free(graph);
  freeGraphAL(minSpanTree);
  free(REPLACEMENT); 
@@ -1255,7 +1297,6 @@ int main(int argc, char **argv) {
  free(amtNodes);
  free(micro);
  free(number);
- free(parent);
  return 0;
 }
 
