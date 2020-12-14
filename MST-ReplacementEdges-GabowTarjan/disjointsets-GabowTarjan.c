@@ -1,6 +1,11 @@
 #include "disjointsets-GabowTarjan.h"
 #include<stdio.h>
+
+#define NO_MATH
+
+#ifndef NO_MATH
 #include<math.h>
+#endif
 
 int Find(Subset_t *subsets, int i) {
   if (subsets[i].Parent != i)
@@ -44,7 +49,11 @@ void MicroLink(int micro[], int number[], int v, int *markTableCounter, int * am
 #endif
   z = number[v];
   {
+#ifdef NO_MATH
+    markTableCounter[micro[v]] +=  1 << (z-1);
+#else
     markTableCounter[micro[v]] += (int) (pow(2,(z-1)) +0.5);
+#endif
   }
   return;
 }
