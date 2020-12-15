@@ -769,267 +769,171 @@ void parseFlags(int argc, char **argv, FILE **infile) {
   return;
 }
 
-void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int b, MicroSetType *microsub, int * microSetNum, int *counter, int micro[], int number[],  int *PARENT,  int *amtNodes, int *MicrosetOfroot, Table *NODE, int *parent, int *IN, int *OUT, struct Stack* stack)
-{
-    struct node *p;
-    int child;
-    int i;
-    int popnum;
-    eulerCount++;
-    IN[v] = eulerCount;
-    p=graph->adjLists[v];
+void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int b, MicroSetType *microsub, int * microSetNum, int *counter, int micro[], int number[],  int *PARENT,  int *amtNodes, int *MicrosetOfroot, Table *NODE, int *parent, int *IN, int *OUT, struct Stack* stack) {
+  struct node *p;
+  int child;
+  int i, j;
+  int popnum;
+  eulerCount++;
+  IN[v] = eulerCount;
+  p=graph->adjLists[v];
 
-    visited[v]=1;
+  visited[v]=1;
 #if DEBUG_MICROSET
-    printf("Visit current=%d, visited[%d]=%d,isRoot=%d, d[root]=%d,b=%d, microsetnum=%d, counter=%d\n",v, v,visited[v],isRoot,d[v],b, * microSetNum, *counter);
+  printf("Visit current=%d, visited[%d]=%d,isRoot=%d, d[root]=%d,b=%d, microsetnum=%d, counter=%d\n",v, v,visited[v],isRoot,d[v],b, * microSetNum, *counter);
 #endif
-    while(p!=NULL)
-    {
-       child=p->vertex;
+  while(p!=NULL) {
+    child=p->vertex;
 #if DEBUG_MICROSET
-      printf("The current node %d has child %d\n",v,child);
+    printf("The current node %d has child %d\n",v,child);
 #endif
-       if(!visited[child]){
-         PARENT[child] = v;
-         //fprintf(outfile, "PARENT[%6d]: %6d\n", child,PARENT[child]);
-	 dfs_microset(graph, child, visited,-1,d,b,microsub, microSetNum, counter, micro, number,   PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, stack);
-       	   if (d[v]<((b+1)/2)) {
+    if (!visited[child]){
+      PARENT[child] = v;
+      dfs_microset(graph, child, visited,-1,d,b,microsub, microSetNum, counter, micro, number,   PARENT,  amtNodes, MicrosetOfroot, NODE, parent, IN, OUT, stack);
+      if (d[v]<((b+1)/2)) {
 #if DEBUG_MICROSET
-     printf("Before Updata  d[%d]=%d + d[%d]=%d=%d\n",v,d[v],child,d[child],d[v]+d[child]);
+	printf("Before Updata  d[%d]=%d + d[%d]=%d=%d\n",v,d[v],child,d[child],d[v]+d[child]);
 #endif
-             d[v]=d[v]+d[child];
-	     push(stack, child);
+	d[v]=d[v]+d[child];
+	push(stack, child);
+	
+	*counter=*counter+1;
+#if DEBUG_MICROSET
+	printf("1- Push node %d, into stack as the %d th element, d[%d]=%d, d[%d]=%d\n",child,*counter-1,v,d[v],child,d[child]);
+	printf("1 Add node %d, into microset %d, as the %d th element, d[%d]=%d, d[%d]=%d\n",child,*microSetNum,*counter-1,v,d[v],child,d[child]);
+#endif
+      }
+      else {
+#if DEBUG_MICROSET
+	printf("2- Complete a microset %d, with root  %d and the subtree  has %d elements, d[%d]=%d + d[%d]=%d =%d\n",*microSetNum,v,d[v]+d[child]-2,v,d[v],child,d[child],d[v]+d[child]);
+#endif
+	popnum=d[v]+d[child]-2;
 
-             *counter=*counter+1;
-#if DEBUG_MICROSET
-     printf("1- Push node %d, into stack as the %d th element, d[%d]=%d, d[%d]=%d\n",child,*counter-1,v,d[v],child,d[child]);
-     printf("1 Add node %d, into microset %d, as the %d th element, d[%d]=%d, d[%d]=%d\n",child,*microSetNum,*counter-1,v,d[v],child,d[child]);
-#endif
-           } else
-           {
-#if DEBUG_MICROSET
-     printf("2- Complete a microset %d, with root  %d and the subtree  has %d elements, d[%d]=%d + d[%d]=%d =%d\n",*microSetNum,v,d[v]+d[child]-2,v,d[v],child,d[child],d[v]+d[child]);
-#endif
-             popnum=d[v]+d[child]-2;
+	NODE[*microSetNum].nodetable = (int *)malloc((popnum+1) * sizeof(int));
+	checkPtr(NODE[*microSetNum].nodetable);
+	
+	MicrosetOfroot[v] = *microSetNum;
 
-             NODE[*microSetNum].nodetable = (int *)malloc((popnum+1) * sizeof(int));
-
-             checkPtr(NODE[*microSetNum].nodetable);
-            // MARK[*microSetNum].nodetable = (int *)malloc((popnum+1) * sizeof(int));
-            MicrosetOfroot[v] = *microSetNum;
-            // checkPtr(MARK[*microSetNum].nodetable);
-            
-
-             amtNodes[*microSetNum] = popnum;
+	amtNodes[*microSetNum] = popnum;
  			
-              i=1;
-             for (i=1;i<popnum+1;i++){
+	for (i=1;i<popnum+1;i++) {
+	  microsub[*microSetNum].vertices[i]=pop(stack);
+	  NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
 
-	       microsub[*microSetNum].vertices[i]=pop(stack);
-                 NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
-
-                micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
-                number[microsub[*microSetNum].vertices[i]] = i;
-               // fprintf(outfile, "node[%6d, %6d]: %6d\n",*microSetNum, i,microsub[*microSetNum].vertices[i] );
-                //amtNodes[*microSetNum]+=1;
+	  micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
+	  number[microsub[*microSetNum].vertices[i]] = i;
 #if DEBUG_MICROSET
-     printf("2- The root of microset is %d, the %d th element in microset %d is %d\n",v,i,*microSetNum, microsub[*microSetNum].vertices[i]);
+	  printf("2- The root of microset is %d, the %d th element in microset %d is %d\n",v,i,*microSetNum, microsub[*microSetNum].vertices[i]);
 #endif
-             }
+	}
              
-            
-             microsub[*microSetNum].root=v;
+	microsub[*microSetNum].root=v;
              
-             	for( int j =1; j<amtNodes[*microSetNum]+1;j++)
-	{
-		
-   // fprintf(outfile, "PARENT[%6d]: %6d\n",microsub[*microSetNum].vertices[j], PARENT[microsub[*microSetNum].vertices[j]] );
-	 if(micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j]))
-	 {
-
-	   parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
-	 //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  );  
-	 	
-	 		
-	 }
-        
-    else{
-    	parent[*microSetNum]+=0;
-    //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  ); 
-	} 
-
-        			
+	for (j=1; j<amtNodes[*microSetNum]+1;j++) {
+	  if (micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j])) {
+	    parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
+	  }
+	  else{
+	    parent[*microSetNum]+=0;
+	  } 
 	}
 
-             
+	*microSetNum=*microSetNum+1;
+	*counter=*counter-popnum;
+	d[v]=2;
+	d[child]=1;
+	push(stack, child);
 
-
-             *microSetNum=*microSetNum+1;
-             *counter=*counter-popnum;
-             d[v]=2;
-             d[child]=1;
-	     push(stack, child);
-
-             *counter=*counter+1;
+	*counter=*counter+1;
 #if DEBUG_MICROSET
-     printf("2- Push node %d, into stack as the %d th element, d[%d]=%d, d[%d]=%d\n",child,*counter-1,v,d[v],child,d[child]);
+	printf("2- Push node %d, into stack as the %d th element, d[%d]=%d, d[%d]=%d\n",child,*counter-1,v,d[v],child,d[child]);
 #endif
-           }
-       }  
-       p=p->next;
+      }
+    }  
+    p=p->next;
 
-    }
-    eulerCount++;
-    OUT[v] = eulerCount;
+  }
+  eulerCount++;
+  OUT[v] = eulerCount;
 
-       	   if (d[v]>=((b+1)/2)) {
+  if (d[v]>=((b+1)/2)) {
 #if DEBUG_MICROSET
     printf("4- Complete a microset %d, with root  %d and the subtree  has %d elements, d[%d]=%d\n",*microSetNum,v,d[v]-1,v,d[v]);
 #endif
-             popnum=d[v]-1;
-             //microsub[*microSetNum].vertices[popnum];
+    popnum=d[v]-1;
 
-            NODE[*microSetNum].nodetable = (int *)malloc((popnum+1) * sizeof(int));
-
-             checkPtr(NODE[*microSetNum].nodetable);
+    NODE[*microSetNum].nodetable = (int *)malloc((popnum+1) * sizeof(int));
+    checkPtr(NODE[*microSetNum].nodetable);
              
-            
-             
-             
-             amtNodes[*microSetNum] = popnum;
+    amtNodes[*microSetNum] = popnum;
 
-          
-            i=1;
-             for (i=1;i<popnum+1;i++){
-
-	       microsub[*microSetNum].vertices[i]=pop(stack);
-                
-               
-                NODE[*microSetNum].nodetable[i] =  microsub[*microSetNum].vertices[i];
-             //   MARK[*microSetNum].nodetable[i] =0;
-                micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
-                number[microsub[*microSetNum].vertices[i]] = i;
-            //amtNodes[*microSetNum]+=1;
-             //   fprintf(outfile, "node[%6d, %6d]: %6d\n",*microSetNum, i,microsub[*microSetNum].vertices[i] );
+    for (i=1 ; i<popnum+1 ; i++) {
+      microsub[*microSetNum].vertices[i]=pop(stack);
+                     
+      NODE[*microSetNum].nodetable[i] =  microsub[*microSetNum].vertices[i];
+      micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
+      number[microsub[*microSetNum].vertices[i]] = i;
 #if DEBUG_MICROSET
-     printf("4- The root of microset is %d, the %d th element in microset %d is %d\n",v,i,*microSetNum, microsub[*microSetNum].vertices[i]);
-#endif
-				
-             }
-            
-            
-             microsub[*microSetNum].root=v;
-            MicrosetOfroot[v] = *microSetNum;
-             for( int j =1; j<amtNodes[*microSetNum]+1;j++)
-	{
-		
-    //fprintf(outfile, "PARENT[%6d]: %6d\n",microsub[*microSetNum].vertices[j], PARENT[microsub[*microSetNum].vertices[j]] );
-	 if(micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[ microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j]))
-	 {
- 
-	   parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
-	 //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  );  
-	 	
-	 		
-	 }
-        
-    else{
-    	parent[*microSetNum]+=0;
-    //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  ); 
-	} 
-
-        			
-	}
-             
-             *microSetNum=*microSetNum+1;
-             *counter=*counter-popnum;
-             d[v]=1;
-
-           }
-
-
-/*
-    if (d[v]>=b) {
-#if DEBUG_MICROSET
-     printf("4 Complete a microset %d, with root  %d and totally has %d elements, d[%d]=%d + d[%d]=%d =%d\n",*microSetNum,v,*counter-1,v,d[v],child,d[child],d[v]+d[child]);
-#endif
-             popnum=d[v]-1;
-             for (i=0;i<popnum;i++){
-                microsub[*microSetNum].vertices[i]=pop(&top);
-             }
-             microsub[*microSetNum].root=v;
-             *microSetNum=*microSetNum+1;
-             *counter=*counter-popnum;
-             d[v]=1;
-     }
-*/    
-    if (isRoot>0) {
-             popnum=*counter-1;
-        
-             NODE[*microSetNum].nodetable = (int *)malloc((popnum+2) * sizeof(int));
-             checkPtr(NODE[*microSetNum].nodetable);
-          //  MARK[*microSetNum].nodetable = (int *)malloc((popnum+2) * sizeof(int));
-           //  checkPtr(MARK[*microSetNum].nodetable);
-
-             //
-             amtNodes[*microSetNum] = popnum+1;
-            
-             for (i=1;i<popnum+1;i++){
-             	
-                	
-	       microsub[*microSetNum].vertices[i]=pop(stack);
-                NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
-
-                micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
-                number[microsub[*microSetNum].vertices[i]] = i;
-                //amtNodes[*microSetNum]+=1;
-               // fprintf(outfile, "node[%6d, %6d]: %6d\n",*microSetNum, i,microsub[*microSetNum].vertices[i] );
-#if DEBUG_MICROSET
-     printf("5- The root of microset is %d, the %d th element in microset %d is %d\n",-1,i,*microSetNum, microsub[*microSetNum].vertices[i]);
-#endif
-             }
-/* We need to add the root node that is not pushed into the stack*/  
-//amtNodes[*microSetNum]+=1;
-				microsub[*microSetNum].root=v;  
-        MicrosetOfroot[v] = *microSetNum;        
-                microsub[*microSetNum].vertices[i]=v;
-                NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
-                micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
-                number[microsub[*microSetNum].vertices[i]] = i;
-               // fprintf(outfile, "node[%6d, %6d]: %6d\n",*microSetNum, i,microsub[*microSetNum].vertices[i] );
-                
-    for( int j =1; j<amtNodes[*microSetNum]+1;j++)
-	{
-		
-   // fprintf(outfile, "PARENT[%6d]: %6d\n",microsub[*microSetNum].vertices[j], PARENT[microsub[*microSetNum].vertices[j]] );
-	 if(micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[ microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j]))
-	 {
- 
-	   parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
-	 //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  );  
-	 	
-	 		
-	 }
-        
-    else{
-    	parent[*microSetNum]+=0;
-    //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  ); 
-	} 
-
-        			
-	}
-				
-            
-//             microsub[*microSetNum].vertices[popnum]=v;
-				
-             
-#if DEBUG_MICROSET
-     printf("5- The root of microset is %d, the %d th element in microset %d is %d\n",-1,i,*microSetNum, microsub[*microSetNum].vertices[i]);
-     
-     printf("5- Complete a microset %d, with root  %d and totally has %d elements, d[%d]=%d \n",*microSetNum,-1,popnum+1,v,d[v]);
+      printf("4- The root of microset is %d, the %d th element in microset %d is %d\n",v,i,*microSetNum, microsub[*microSetNum].vertices[i]);
 #endif
     }
-    //fprintf(outfile, "number[%6d]: %6d\n",8,number[8] );
+    microsub[*microSetNum].root=v;
+    MicrosetOfroot[v] = *microSetNum;
+    for (j=1 ; j<amtNodes[*microSetNum]+1 ; j++) {
+      if (micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[ microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j])) {
+	parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
+      }
+      else {
+    	parent[*microSetNum]+=0;
+      } 
+    }
+             
+    *microSetNum=*microSetNum+1;
+    *counter=*counter-popnum;
+    d[v]=1;
+  }
+
+  if (isRoot>0) {
+    popnum=*counter-1;
+        
+    NODE[*microSetNum].nodetable = (int *)malloc((popnum+2) * sizeof(int));
+    checkPtr(NODE[*microSetNum].nodetable);
+
+    amtNodes[*microSetNum] = popnum+1;
+            
+    for (i=1 ; i<popnum+1 ; i++) {
+      microsub[*microSetNum].vertices[i]=pop(stack);
+      NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
+
+      micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
+      number[microsub[*microSetNum].vertices[i]] = i;
+#if DEBUG_MICROSET
+      printf("5- The root of microset is %d, the %d th element in microset %d is %d\n",-1,i,*microSetNum, microsub[*microSetNum].vertices[i]);
+#endif
+    }
+    /* We need to add the root node that is not pushed into the stack*/  
+    microsub[*microSetNum].root=v;  
+    MicrosetOfroot[v] = *microSetNum;        
+    microsub[*microSetNum].vertices[i]=v;
+    NODE[*microSetNum].nodetable[i] = microsub[*microSetNum].vertices[i];
+    micro[microsub[*microSetNum].vertices[i]] = *microSetNum;
+    number[microsub[*microSetNum].vertices[i]] = i;
+                
+    for (j=1 ; j<amtNodes[*microSetNum]+1 ; j++) {
+      if (micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[ microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j])) {
+	parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
+      }
+      else {
+    	parent[*microSetNum]+=0;
+      } 
+    }
+             
+#if DEBUG_MICROSET
+    printf("5- The root of microset is %d, the %d th element in microset %d is %d\n",-1,i,*microSetNum, microsub[*microSetNum].vertices[i]);
+     
+    printf("5- Complete a microset %d, with root  %d and totally has %d elements, d[%d]=%d \n",*microSetNum,-1,popnum+1,v,d[v]);
+#endif
+  }
 }
 /******************************************************/
 
