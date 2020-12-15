@@ -21,6 +21,7 @@
 #define DEBUG_PATHLABEL 0
 #define DEBUG_REPLACE 0
 #define DEBUG_MICROSET 0
+
 #define TIMING 0
 
 #define amtMarkTables
@@ -30,14 +31,14 @@ int QUIET;
 
 /***********************************************************************/
 #if TIMING
-struct timespec timer_start(){
+struct timespec timer_start() {
   struct timespec start_time;
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_time);
   return start_time;
 }
 
 // call this function to end a timer, returning nanoseconds elapsed as a long
-long timer_end(struct timespec start_time){
+long timer_end(struct timespec start_time) {
   struct timespec end_time;
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_time);
   long diffInNanos = (end_time.tv_sec - start_time.tv_sec) * (long)1e9 + (end_time.tv_nsec - start_time.tv_nsec);
@@ -1065,7 +1066,7 @@ int main(int argc, char **argv) {
   if (!QUIET)
     printf("REP %d\n",REPEAT);
   struct timespec rtime = timer_start();
-  for (r=0; r<1 ; r++){
+  for (int r=0; r<REPEAT ; r++){
 #endif
 
     /* pick random vertex as root */
