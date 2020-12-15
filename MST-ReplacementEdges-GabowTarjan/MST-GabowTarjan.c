@@ -10,7 +10,7 @@
 #include<time.h>
 #include<string.h>
 #include<ctype.h>
-#include<math.h>
+
 #include "disjointsets-GabowTarjan.h"
 
 #define DEBUG_EDGELIST 0
@@ -50,6 +50,35 @@ void checkPtr(void *ptr) {
   if (ptr == NULL) exit(1);
   return;
 }
+
+#if 1
+unsigned int nextPowerOfTwo(unsigned int n) {
+  unsigned int p;
+  p = 1; 
+  if (n && !(n & (n - 1))) 
+    return n; 
+  
+  while (p < n)  
+    p <<= 1; 
+      
+  return p; 
+}
+
+unsigned int calcPower(unsigned int base, unsigned int exp) {
+  int i;
+  unsigned int result;
+
+  i = 1;
+  result = 1;
+
+  while(i <= exp){
+    result *= base;
+    i++;
+  }
+
+  return result;
+}
+#endif
 
 /***********************************************************************/
 /* Stack */
@@ -818,10 +847,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
 	 if(micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j]))
 	 {
 
-#if 1
-	   fprintf(stderr,"pow:  b: %d j: %d ((int)(pow((int)pow(2,ceil(log2(b))),(j-1)))): %d\n",b,j,((int)(pow((int)pow(2,ceil(log2(b))),(j-1)))));
-#endif
-	parent[*microSetNum] += ((int)(pow((int)pow(2,ceil(log2(b))),(j-1)))) *number[PARENT[ microsub[*microSetNum].vertices[j]]];
+	   parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
 	 //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  );  
 	 	
 	 		
@@ -901,7 +927,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
 	 if(micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[ microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j]))
 	 {
  
-	parent[*microSetNum] += ((int)(pow((int)pow(2,ceil(log2(b))),(j-1)))) *number[PARENT[ microsub[*microSetNum].vertices[j]]];
+	   parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
 	 //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  );  
 	 	
 	 		
@@ -979,7 +1005,7 @@ void dfs_microset(GraphAL_t *graph, int v, int * visited,int isRoot,int *d, int 
 	 if(micro[PARENT[ microsub[*microSetNum].vertices[j]]]==micro[microsub[*microSetNum].vertices[j]] && (PARENT[ microsub[*microSetNum].vertices[j]]!=microsub[*microSetNum].vertices[j]))
 	 {
  
-	parent[*microSetNum] += ((int)(pow((int)pow(2,ceil(log2(b))),(j-1)))) *number[PARENT[ microsub[*microSetNum].vertices[j]]];
+	   parent[*microSetNum] += calcPower(nextPowerOfTwo(b),(j-1)) * number[PARENT[ microsub[*microSetNum].vertices[j]]];
 	 //	fprintf(outfile, "parent(%6d,%6d): %6d \n",i,j, parent[i][j]  );  
 	 	
 	 		
