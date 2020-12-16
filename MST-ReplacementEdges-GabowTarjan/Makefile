@@ -8,7 +8,7 @@ OUTFILES = $(patsubst inputs/%.gr, %.out, $(GRAPHS))
 
 $(PROG) : $(FILES)
 #	$(CC) -O3 -o $(PROG) $(FILES) -lrt
-	$(CC) -O3 -g -Wall -o $(PROG) $(FILES)
+	$(CC) -O3 -Wall -o $(PROG) $(FILES)
 
 %.out : inputs/%.gr $(PROG)
 	-./$(PROG) -q -f $< -o $@

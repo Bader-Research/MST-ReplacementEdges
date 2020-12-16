@@ -75,19 +75,12 @@ int microfind(int v, int micro[], int number[], MicroSetType *microsub, char ans
 }
 
 int macrofind(int x, MacroSetType *macrosub, int micro[], int MicrosetOfroot[],MicroSetType *microsub, int PARENT[], int root, int number[], int *markTableCounter, int amtNodes[], char answer[][32][5], int *parent ) {
-  if (microfind(x, micro, number, microsub,  answer,markTableCounter,parent,PARENT )!=x) {
-    if (micro[PARENT[x]]!=micro[x] || PARENT[x]!=microsub[micro[x]].root)
-      return PARENT[x];
-  }
+  if ((microfind(x, micro, number, microsub,  answer,markTableCounter,parent,PARENT )!= x) && (micro[PARENT[x]] != micro[x] || PARENT[x] != microsub[micro[x]].root))
+    return PARENT[x];
 
-  /* DAB COMMENT: Not needed? */
-#if 0
-  if(macrosub[MicrosetOfroot[x]].parent == macrosub[MicrosetOfroot[x]].root) {
-    return macrosub[MicrosetOfroot[x]].parent;
-  }
-#endif  
   if(macrosub[MicrosetOfroot[x]].parent != macrosub[MicrosetOfroot[x]].root) {
-    macrosub[MicrosetOfroot[x]].parent=macrofind(macrosub[MicrosetOfroot[x]].parent,macrosub,micro, MicrosetOfroot,microsub, PARENT,root,number, markTableCounter, amtNodes,answer, parent  );
+    macrosub[MicrosetOfroot[x]].parent =
+      macrofind(macrosub[MicrosetOfroot[x]].parent,macrosub,micro, MicrosetOfroot,microsub, PARENT,root,number, markTableCounter, amtNodes,answer, parent  );
   }
   return macrosub[MicrosetOfroot[x]].parent;
 }
